@@ -16,8 +16,14 @@ export default function LoginPage() {
     e.preventDefault(); setError(''); setLoading(true)
     try { await login(form.username, form.password); navigate('/orders') }
     catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
-      setError(detail ?? 'Usuario o contraseña incorrectos')
+      const axiosErr = err as { response?: { data?: { detail?: string } }; request?: unknown }
+      if (axiosErr.response) {
+        setError(axiosErr.response.data?.detail ?? 'Usuario o contraseña incorrectos')
+      } else if (axiosErr.request) {
+        setError('No se puede conectar al servidor. Verifica que el backend esté activo en el puerto 8000.')
+      } else {
+        setError('Error inesperado. Intenta de nuevo.')
+      }
     }
     finally { setLoading(false) }
   }

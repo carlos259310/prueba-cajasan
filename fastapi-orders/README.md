@@ -1,10 +1,8 @@
-# fastapi-orders — API de Gestión de Órdenes
+# fastapi-orders — Gestión de Órdenes
 
-Este servicio permite crear y consultar órdenes de compra. Cada orden tiene un cliente, una lista de artículos y un estado.
+Este servicio permite crear y consultar órdenes de compra. No tiene login propio: usa el **mismo token** que emite `fastapi-jwt`. Ambos servicios comparten la clave secreta, así que te autenticas una sola vez y el token funciona en los dos.
 
-No tiene login propio: usa el **mismo token** que emite `fastapi-jwt`. Ambos servicios comparten la clave secreta, así que no necesitas autenticarte dos veces.
-
-> Todos los datos viven en memoria. Al reiniciar el servidor, todo vuelve al estado inicial.
+> Los datos viven en memoria. Al reiniciar el servidor, todo vuelve al estado inicial.
 
 ---
 
@@ -15,21 +13,41 @@ No tiene login propio: usa el **mismo token** que emite `fastapi-jwt`. Ambos ser
 
 ---
 
-## Instalación y arranque
+## Instalación
 
-```bash
+```powershell
 cd fastapi-orders
 
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+# Crea el entorno virtual
+python -m venv .venv
 
+# Actívalo (Windows)
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+# source .venv/bin/activate
+
+# Instala las dependencias
 pip install -r requirements.txt
+```
+
+> Si Activate.ps1 falla por permisos de ejecución, ejecuta esto una sola vez:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+---
+
+## Arrancar el servidor
+
+```powershell
 uvicorn app.main:app --reload --port 8001
 ```
 
-Disponible en: **http://127.0.0.1:8001**
-Swagger UI: **http://127.0.0.1:8001/docs**
+Cuando aparezca `Uvicorn running on http://127.0.0.1:8001`, el servidor está listo.
+
+- API: http://127.0.0.1:8001
+- Swagger (documentación interactiva): http://127.0.0.1:8001/docs
 
 ---
 
@@ -44,39 +62,40 @@ Swagger UI: **http://127.0.0.1:8001/docs**
 }
 ```
 
-| Campo          | Descripción                                                          |
-|----------------|----------------------------------------------------------------------|
-| `id`           | Número entero, se asigna automáticamente al crear                    |
-| `customerName` | Nombre del cliente, mínimo 1 carácter                                |
-| `items`        | Lista de strings con los artículos, mínimo 1 elemento                |
-| `status`       | Estado de la orden. Se crea siempre como `pending`. Valores posibles: `pending`, `processing`, `completed`, `cancelled` |
+| Campo          | Descripción                                                                              |
+|----------------|------------------------------------------------------------------------------------------|
+| `id`           | Número entero asignado automáticamente al crear                                          |
+| `customerName` | Nombre del cliente (mínimo 1 carácter)                                                   |
+| `items`        | Lista de artículos (mínimo 1 elemento)                                                   |
+| `status`       | Estado de la orden. Valores posibles: `pending`, `processing`, `completed`, `cancelled`. Siempre empieza en `pending` |
 
 ---
 
 ## Cómo probarlo paso a paso
 
-### Paso 1: Obtener un token desde fastapi-jwt
+### Paso 1: Obtén un token desde fastapi-jwt
 
-Tienes dos opciones:
+**Desde Swagger (más fácil):**
 
-**Desde Swagger** (más visual):
-1. Abre http://127.0.0.1:8000/docs → `POST /auth/login` → **Try it out**
-2. Ingresa `admin` / `admin123` → copia el `access_token`
+1. Abre http://127.0.0.1:8000/docs
+2. Busca `POST /auth/login` → **Try it out**
+3. Ingresa `admin` / `admin123` → **Execute**
+4. Copia el valor de `access_token`
 
-**Desde la terminal**:
+**Desde la terminal:**
 ```bash
 curl -s -X POST http://127.0.0.1:8000/auth/login \
   -d "username=admin&password=admin123" \
   -H "Content-Type: application/x-www-form-urlencoded"
 ```
 
-### Paso 2: Autorizar en el Swagger de fastapi-orders
+### Paso 2: Autorízate en el Swagger de fastapi-orders
 
 1. Abre http://127.0.0.1:8001/docs
 2. Haz clic en **Authorize** (arriba a la derecha)
-3. Pega el `access_token` en el campo → **Authorize** → **Close**
+3. Pega el `access_token` → **Authorize** → **Close**
 
-### Paso 3: Probar los endpoints
+### Paso 3: Prueba los endpoints
 
 **Listar todas las órdenes:**
 ```bash
@@ -84,7 +103,7 @@ curl -s http://127.0.0.1:8001/orders \
   -H "Authorization: Bearer TU_TOKEN"
 ```
 
-**Obtener la orden con id 1:**
+**Obtener una orden por ID:**
 ```bash
 curl -s http://127.0.0.1:8001/orders/1 \
   -H "Authorization: Bearer TU_TOKEN"
@@ -113,7 +132,8 @@ Respuesta esperada (`201 Created`):
 curl -s http://127.0.0.1:8001/orders/99 \
   -H "Authorization: Bearer TU_TOKEN"
 ```
-Respuesta esperada (`404`):
+
+Respuesta esperada (`404 Not Found`):
 ```json
 { "detail": "Orden 99 no encontrada" }
 ```
@@ -122,36 +142,36 @@ Respuesta esperada (`404`):
 
 ## Endpoints
 
-| Método | Ruta          | Auth | Descripción                              |
-|--------|---------------|------|------------------------------------------|
-| GET    | /orders       | Sí   | Retorna todas las órdenes                |
-| GET    | /orders/{id}  | Sí   | Retorna una orden específica por su ID   |
-| POST   | /orders       | Sí   | Crea una orden nueva (status = pending)  |
+| Método | Ruta          | Token | Descripción                             |
+|--------|---------------|-------|-----------------------------------------|
+| GET    | /orders       | Sí    | Devuelve todas las órdenes              |
+| GET    | /orders/{id}  | Sí    | Devuelve una orden específica por su ID |
+| POST   | /orders       | Sí    | Crea una orden nueva (status = pending) |
 
 ---
 
-## Órdenes precargadas al iniciar
+## Datos precargados al iniciar
 
-El servidor arranca con 3 órdenes de ejemplo para que tengas datos inmediatamente:
+El servidor arranca con 3 órdenes de ejemplo:
 
-| ID | Cliente       | Artículos                           | Estado      |
-|----|---------------|-------------------------------------|-------------|
-| 1  | Juan Pérez    | Camiseta, Zapatos                   | pending     |
-| 2  | María García  | Laptop Pro 15                       | processing  |
-| 3  | Carlos López  | Mouse Inalámbrico, Teclado Mecánico | completed   |
+| ID | Cliente        | Artículos                           | Estado      |
+|----|----------------|-------------------------------------|-------------|
+| 1  | Juan Pérez     | Camiseta, Zapatos                   | pending     |
+| 2  | María García   | Laptop Pro 15                       | processing  |
+| 3  | Carlos López   | Mouse Inalámbrico, Teclado Mecánico | completed   |
 
 ---
 
-## Estructura del proyecto
+## Cómo está organizado el código
 
 ```
 fastapi-orders/
 ├── app/
-│   ├── main.py               ← Crea la app, configura CORS y registra rutas
+│   ├── main.py               ← Crea la app, configura CORS y registra las rutas
 │   ├── core/
 │   │   ├── config.py         ← SECRET_KEY (debe coincidir con fastapi-jwt)
 │   │   ├── security.py       ← Solo decodifica tokens, no los genera
-│   │   └── dependencies.py   ← get_current_user: valida token en cada request
+│   │   └── dependencies.py   ← get_current_user: valida el token en cada request
 │   ├── routers/
 │   │   └── orders.py         ← Los 3 endpoints de órdenes + datos en memoria
 │   └── schemas/
@@ -161,6 +181,8 @@ fastapi-orders/
 
 ---
 
-## Nota sobre los estados
+## Nota sobre el SECRET_KEY
 
-El servicio recibe las órdenes siempre en estado `pending`. En un sistema real, otro proceso (o endpoint adicional) se encargaría de cambiar el estado a `processing`, `completed` o `cancelled`. En esta demo los estados están en el código solo como referencia.
+El `SECRET_KEY` en `app/core/config.py` debe ser idéntico al de `fastapi-jwt`. Así, el token que generó un servicio puede ser validado por el otro sin necesidad de una base de datos compartida ni comunicación entre servicios.
+
+Si cambias el `SECRET_KEY` en uno, cámbialo también en el otro.
