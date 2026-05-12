@@ -10,6 +10,15 @@ export default function ProductsPage() {
   const [error, setError]         = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [search, setSearch]       = useState('')
+
+  const filtered = search.trim()
+    ? products.filter((p) =>
+        String(p.id).includes(search.trim()) ||
+        p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+        p.category.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    : products
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -35,10 +44,10 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Inventario de Productos</h2>
-            <p className="text-gray-400 text-sm mt-0.5">{products.length} producto(s) en total</p>
+            <p className="text-gray-400 text-sm mt-0.5">{filtered.length} de {products.length} producto(s)</p>
           </div>
           <button onClick={openCreate}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm">
@@ -47,6 +56,16 @@ export default function ProductsPage() {
             </svg>
             Nuevo Producto
           </button>
+        </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por ID, nombre o categoría..."
+            className="w-full max-w-sm border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+          />
         </div>
 
         {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">{error}</div>}
@@ -68,7 +87,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {products.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id} className="hover:bg-indigo-50/40 transition-colors">
                     <td className="px-5 py-4 text-gray-400 font-mono text-xs">#{p.id}</td>
                     <td className="px-5 py-4 font-semibold text-gray-900">{p.name}</td>
@@ -92,9 +111,9 @@ export default function ProductsPage() {
                 ))}
               </tbody>
             </table>
-            {products.length === 0 && (
+            {filtered.length === 0 && (
               <div className="text-center py-16 text-gray-400">
-                <p className="font-medium">No hay productos todavía</p>
+                <p className="font-medium">{search ? 'Sin resultados para esa búsqueda' : 'No hay productos todavía'}</p>
               </div>
             )}
           </div>

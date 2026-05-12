@@ -19,6 +19,14 @@ export default function OrdersPage() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [search, setSearch]       = useState('')
+
+  const filtered = search.trim()
+    ? orders.filter((o) =>
+        String(o.id).includes(search.trim()) ||
+        o.customerName.toLowerCase().includes(search.trim().toLowerCase())
+      )
+    : orders
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -40,10 +48,10 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Órdenes</h2>
-            <p className="text-gray-400 text-sm mt-0.5">{orders.length} orden(es) registrada(s)</p>
+            <p className="text-gray-400 text-sm mt-0.5">{filtered.length} de {orders.length} orden(es)</p>
           </div>
           <button onClick={() => setModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm">
@@ -54,6 +62,16 @@ export default function OrdersPage() {
           </button>
         </div>
 
+        <div className="mb-6">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por ID o nombre de cliente..."
+            className="w-full max-w-sm border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+          />
+        </div>
+
         {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">{error}</div>}
 
         {loading ? (
@@ -62,7 +80,7 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map((order) => (
+            {filtered.map((order) => (
               <div key={order.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
@@ -82,9 +100,9 @@ export default function OrdersPage() {
                 </span>
               </div>
             ))}
-            {orders.length === 0 && (
+            {filtered.length === 0 && (
               <div className="text-center py-16 text-gray-400">
-                <p className="font-medium">No hay órdenes todavía</p>
+                <p className="font-medium">{search ? 'Sin resultados para esa búsqueda' : 'No hay órdenes todavía'}</p>
               </div>
             )}
           </div>
