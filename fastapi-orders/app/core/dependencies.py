@@ -12,7 +12,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         payload = decode_token(token)
         username: str | None = payload.get("sub")
         if not username or payload.get("type") != "access":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return {"username": username, "role": payload.get("role")}
     except JWTError:
         raise HTTPException(
