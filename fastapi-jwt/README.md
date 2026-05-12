@@ -1,55 +1,111 @@
-# FastAPI JWT Authentication
+# fastapi-jwt — API de Autenticación y Productos
 
-API REST construida con **FastAPI** y autenticación mediante **JSON Web Tokens (JWT)** usando la librería `python-jose`. Todos los datos (usuarios y productos) se almacenan en memoria, sin base de datos.
+Este servicio hace dos cosas: **autenticar usuarios** con JWT y **gestionar un catálogo de productos**. Es el punto de entrada del sistema: todos los demás servicios y frontends dependen de él para obtener los tokens.
+
+> Todos los datos viven en memoria. Al reiniciar el servidor, todo vuelve al estado inicial.
 
 ---
 
-## Requisitos previos
+## Requisitos
 
-- Python 3.11 o superior
+- Python 3.10 o superior
 - pip
 
 ---
 
-## Instalación y ejecución
+## Instalación y arranque
 
 ```bash
-# 1. Clonar o descargar el proyecto
 cd fastapi-jwt
 
-# 2. (Opcional) Crear un entorno virtual
 python -m venv venv
-# En Windows:
-venv\Scripts\activate
-# En macOS/Linux:
-source venv/bin/activate
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
 
-# 3. Instalar dependencias
 pip install -r requirements.txt
-
-# 4. Levantar el servidor de desarrollo
 uvicorn app.main:app --reload
 ```
 
-El servidor quedará disponible en: **http://127.0.0.1:8000**
+Disponible en: **http://127.0.0.1:8000**
+Swagger UI: **http://127.0.0.1:8000/docs**
 
 ---
 
-## Documentación interactiva
+## Cómo probarlo paso a paso
 
-| Interfaz  | URL                          |
-|-----------|------------------------------|
-| Swagger UI | http://127.0.0.1:8000/docs  |
-| ReDoc      | http://127.0.0.1:8000/redoc |
+### 1. Login
+
+Abre http://127.0.0.1:8000/docs → `POST /auth/login` → **Try it out**
+
+```
+username: admin
+password: admin123
+```
+
+Respuesta:
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "bearer"
+}
+```
+
+### 2. Autorizar en Swagger
+
+Haz clic en **Authorize** → pega el `access_token` → haz clic en **Authorize** → **Close**.
+Ahora todos los candados están abiertos y puedes usar los endpoints protegidos.
+
+### 3. Probar productos
+
+- `GET /products` → lista los 5 productos precargados
+- `GET /products/1` → devuelve solo el producto con id 1
+- `POST /products` → crea un producto nuevo:
+  ```json
+  { "name": "Monitor 4K", "category": "Electrónica", "price": 499.99, "stock": 8 }
+  ```
+- `PUT /products/1` → reemplaza todos los campos del producto 1
+
+### 4. Probar logout
+
+- `POST /auth/logout` → el token actual queda invalidado
+- Intenta usar `GET /products` con ese mismo token → recibirás **401**
+- Haz login de nuevo y verás que todo funciona
+
+### 5. Probar renovación de token
+
+El access_token dura **3 minutos**. Espera a que expire y luego:
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token": "TU_REFRESH_TOKEN"}'
+```
+
+Recibirás un nuevo `access_token` sin tener que hacer login de nuevo.
 
 ---
 
-## Usuarios disponibles (en memoria)
+## Usuarios disponibles
 
-| Username | Password  | Rol   |
-|----------|-----------|-------|
-| admin    | admin123  | ADMIN |
-| user     | user123   | USER  |
+| Usuario | Contraseña | Rol   |
+|---------|-----------|-------|
+| admin   | admin123  | ADMIN |
+| user    | user123   | USER  |
+
+---
+
+## Endpoints
+
+| Método | Ruta           | Auth | Descripción                         |
+|--------|----------------|------|-------------------------------------|
+| POST   | /auth/login    | No   | Login con form (username + password)|
+| POST   | /auth/refresh  | No   | Renueva el access_token             |
+| POST   | /auth/logout   | Sí   | Invalida el access_token actual     |
+| GET    | /products      | Sí   | Lista todos los productos           |
+| GET    | /products/{id} | Sí   | Obtiene un producto por su ID       |
+| POST   | /products      | Sí   | Crea un producto nuevo              |
+| PUT    | /products/{id} | Sí   | Actualiza todos los campos          |
 
 ---
 
@@ -58,194 +114,24 @@ El servidor quedará disponible en: **http://127.0.0.1:8000**
 ```
 fastapi-jwt/
 ├── app/
-│   ├── main.py               # Punto de entrada, configuración de la app y CORS
+│   ├── main.py               ← Crea la app, configura CORS y registra rutas
 │   ├── core/
-│   │   ├── config.py         # Configuración global (SECRET_KEY, tiempos de expiración)
-│   │   ├── security.py       # Lógica JWT: crear, decodificar y blacklistear tokens
-│   │   └── dependencies.py   # Dependencia get_current_user para proteger rutas
+│   │   ├── config.py         ← SECRET_KEY, tiempos de expiración, CORS
+│   │   ├── security.py       ← Crear/verificar tokens, lista negra, usuarios
+│   │   └── dependencies.py   ← get_current_user: valida token en cada request
 │   ├── routers/
-│   │   ├── auth.py           # Endpoints de autenticación (login, refresh, logout)
-│   │   └── products.py       # CRUD de productos (sin delete)
+│   │   ├── auth.py           ← /auth/login, /auth/refresh, /auth/logout
+│   │   └── products.py       ← CRUD de productos
 │   └── schemas/
-│       ├── auth.py           # Modelos Pydantic para tokens y respuestas de auth
-│       └── product.py        # Modelos Pydantic para productos
-├── requirements.txt
-└── README.md
+│       ├── auth.py           ← Modelos de token y respuestas de auth
+│       └── product.py        ← Modelos de producto con validación Pydantic
+└── requirements.txt
 ```
 
 ---
 
-## Endpoints de autenticación
+## Notas técnicas
 
-### `POST /auth/login`
-
-Autentica al usuario y retorna los tokens.
-
-**Body** (`application/x-www-form-urlencoded`):
-```
-username=admin&password=admin123
-```
-
-**Respuesta exitosa** `200 OK`:
-```json
-{
-  "access_token": "<token>",
-  "refresh_token": "<token>",
-  "token_type": "bearer"
-}
-```
-
-> El `access_token` expira en **3 minutos**.  
-> El `refresh_token` expira en **1 día**.
-
----
-
-### `POST /auth/refresh`
-
-Genera un nuevo `access_token` a partir de un `refresh_token` válido.
-
-**Body** (`application/json`):
-```json
-{
-  "refresh_token": "<refresh_token>"
-}
-```
-
-**Respuesta exitosa** `200 OK`:
-```json
-{
-  "access_token": "<nuevo_token>",
-  "token_type": "bearer"
-}
-```
-
----
-
-### `POST /auth/logout`
-
-Invalida el `access_token` actual. El token se añade a una lista negra en memoria (set de Python), por lo que no podrá reutilizarse aunque no haya expirado.
-
-**Header requerido**:
-```
-Authorization: Bearer <access_token>
-```
-
-**Respuesta exitosa** `200 OK`:
-```json
-{
-  "message": "Sesión cerrada exitosamente"
-}
-```
-
----
-
-## Endpoints de productos
-
-Todos los endpoints requieren el header de autorización:
-```
-Authorization: Bearer <access_token>
-```
-
-### `GET /products`
-
-Retorna la lista completa de productos en memoria (incluye 5 productos de ejemplo al iniciar).
-
-**Respuesta** `200 OK`:
-```json
-[
-  { "id": 1, "name": "Laptop Pro 15", "category": "Electrónica", "price": 1299.99, "stock": 15 },
-  ...
-]
-```
-
----
-
-### `GET /products/{id}`
-
-Retorna un producto por su ID.
-
-**Respuesta** `200 OK`:
-```json
-{ "id": 1, "name": "Laptop Pro 15", "category": "Electrónica", "price": 1299.99, "stock": 15 }
-```
-
-**Error** `404 Not Found` si el producto no existe.
-
----
-
-### `POST /products`
-
-Crea un nuevo producto.
-
-**Body** (`application/json`):
-```json
-{
-  "name": "Monitor 4K",
-  "category": "Electrónica",
-  "price": 499.99,
-  "stock": 30
-}
-```
-
-**Respuesta** `201 Created`:
-```json
-{ "id": 6, "name": "Monitor 4K", "category": "Electrónica", "price": 499.99, "stock": 30 }
-```
-
----
-
-### `PUT /products/{id}`
-
-Actualización completa de un producto. Todos los campos son obligatorios.
-
-**Body** (`application/json`):
-```json
-{
-  "name": "Monitor 4K UHD",
-  "category": "Electrónica",
-  "price": 549.99,
-  "stock": 25
-}
-```
-
-**Respuesta** `200 OK`:
-```json
-{ "id": 6, "name": "Monitor 4K UHD", "category": "Electrónica", "price": 549.99, "stock": 25 }
-```
-
-**Error** `404 Not Found` si el producto no existe.
-
----
-
-## Seguridad
-
-- Los tokens JWT se firman con el algoritmo **HS256**.
-- Cada token contiene un campo `jti` (JWT ID) único generado con `uuid4`.
-- Al hacer logout, el `jti` del token se guarda en un `set` de Python (`token_blacklist`), invalidando el token de forma inmediata sin necesidad de esperar su expiración.
-- Para usar los endpoints protegidos en **Swagger UI**, haz clic en el botón **Authorize** e ingresa `Bearer <tu_token>`.
-
----
-
-## Códigos de error HTTP
-
-| Código | Descripción                                           |
-|--------|-------------------------------------------------------|
-| 401    | Token inválido, expirado, invalidado o no proporcionado |
-| 404    | Recurso no encontrado                                 |
-| 422    | Error de validación en el body o parámetros           |
-
----
-
-## Configuración
-
-Los valores por defecto se encuentran en [app/core/config.py](app/core/config.py):
-
-| Variable                     | Valor por defecto                           | Descripción                    |
-|------------------------------|---------------------------------------------|--------------------------------|
-| `SECRET_KEY`                 | `super-secret-key-change-this-in-production`| Clave para firmar los JWT      |
-| `ALGORITHM`                  | `HS256`                                     | Algoritmo de firma             |
-| `ACCESS_TOKEN_EXPIRE_MINUTES`| `3`                                         | Expiración del access token    |
-| `REFRESH_TOKEN_EXPIRE_DAYS`  | `1`                                         | Expiración del refresh token   |
-| `CORS_ORIGINS`               | `["*"]`                                     | Orígenes permitidos para CORS  |
-
-> **Nota:** En producción, cambia el `SECRET_KEY` por un valor secreto seguro y restringe `CORS_ORIGINS` a los dominios autorizados.
+- El `access_token` incluye un campo `jti` (UUID único). Al hacer logout, ese `jti` se guarda en un `set` de Python. Cualquier request posterior con ese token recibe 401 aunque el token no haya expirado.
+- El login usa `OAuth2PasswordRequestForm`, que espera los datos como `application/x-www-form-urlencoded`, no como JSON. Los frontends y curl deben tenerlo en cuenta.
+- El `SECRET_KEY` en `app/core/config.py` debe coincidir con el de `fastapi-orders` para que el token funcione en ambos servicios.
