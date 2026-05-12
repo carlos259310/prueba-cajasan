@@ -1,16 +1,37 @@
-import { useState, FormEvent } from 'react'
-import type { OrderFormData } from '../types'
+import { useState, useEffect, FormEvent } from 'react'
+import type { Order, OrderFormData, OrderStatus, OrderUpdateData } from '../types'
+
+const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
+  { value: 'pending',    label: 'Pendiente'   },
+  { value: 'processing', label: 'En proceso'  },
+  { value: 'completed',  label: 'Completada'  },
+  { value: 'cancelled',  label: 'Cancelada'   },
+]
 
 interface Props {
-  onSave: (data: OrderFormData) => Promise<void>
+  order?: Order | null
+  onSave: (data: OrderFormData | OrderUpdateData) => Promise<void>
   onClose: () => void
 }
 
-export default function OrderModal({ onSave, onClose }: Props) {
+export default function OrderModal({ order, onSave, onClose }: Props) {
   const [customerName, setCustomerName] = useState('')
   const [itemsText, setItemsText]       = useState('')
+  const [orderStatus, setOrderStatus]   = useState<OrderStatus>('pending')
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
+
+  useEffect(() => {
+    if (order) {
+      setCustomerName(order.customerName)
+      setItemsText(order.items.join(', '))
+      setOrderStatus(order.status)
+    } else {
+      setCustomerName('')
+      setItemsText('')
+      setOrderStatus('pending')
+    }
+  }, [order])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -18,11 +39,14 @@ export default function OrderModal({ onSave, onClose }: Props) {
     if (items.length === 0) { setError('Agrega al menos un artículo'); return }
     setError(''); setLoading(true)
     try {
-      await onSave({ customerName: customerName.trim(), items })
+      const data = order
+        ? { customerName: customerName.trim(), items, status: orderStatus }
+        : { customerName: customerName.trim(), items }
+      await onSave(data)
       onClose()
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string | Array<{ msg: string }> } } }).response?.data?.detail
-      setError(Array.isArray(detail) ? (detail[0]?.msg ?? 'Error') : (detail ?? 'Error al crear la orden'))
+      setError(Array.isArray(detail) ? (detail[0]?.msg ?? 'Error') : (detail ?? 'Error al guardar la orden'))
     } finally {
       setLoading(false)
     }
@@ -33,7 +57,7 @@ export default function OrderModal({ onSave, onClose }: Props) {
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Nueva Orden</h2>
+          <h2 className="text-lg font-bold text-gray-800">{order ? 'Editar Orden' : 'Nueva Orden'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -55,14 +79,27 @@ export default function OrderModal({ onSave, onClose }: Props) {
               {itemsText ? itemsText.split(',').filter((s) => s.trim()).length : 0} artículo(s) detectado(s)
             </p>
           </div>
-          <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-            El estado se establece automáticamente como <span className="font-semibold text-yellow-600">pending</span>.
-          </p>
+          {order && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value as OrderStatus)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white">
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!order && (
+            <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
+              El estado se establece automáticamente como <span className="font-semibold text-yellow-600">pending</span>.
+            </p>
+          )}
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium">Cancelar</button>
             <button type="submit" disabled={loading}
               className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
-              {loading ? 'Creando...' : 'Crear Orden'}
+              {loading ? 'Guardando...' : order ? 'Actualizar' : 'Crear Orden'}
             </button>
           </div>
         </form>

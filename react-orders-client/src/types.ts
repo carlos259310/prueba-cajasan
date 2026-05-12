@@ -8,6 +8,7 @@ export interface Order {
 }
 
 export type OrderFormData = Omit<Order, 'id' | 'status'>
+export type OrderUpdateData = Omit<Order, 'id'>
 
 export interface User {
   username: string

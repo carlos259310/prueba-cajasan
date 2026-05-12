@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import api from '../api/client'
 import Navbar from '../components/Navbar'
 import OrderModal from '../components/OrderModal'
-import type { Order, OrderFormData, OrderStatus } from '../types'
+import type { Order, OrderFormData, OrderStatus, OrderUpdateData } from '../types'
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   pending:    'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -15,11 +15,12 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 }
 
 export default function OrdersPage() {
-  const [orders, setOrders]       = useState<Order[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [search, setSearch]       = useState('')
+  const [orders, setOrders]         = useState<Order[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState('')
+  const [modalOpen, setModalOpen]   = useState(false)
+  const [editOrder, setEditOrder]   = useState<Order | null>(null)
+  const [search, setSearch]         = useState('')
 
   const filtered = search.trim()
     ? orders.filter((o) =>
@@ -39,10 +40,14 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  const handleSave = async (formData: OrderFormData) => {
-    await api.post('/orders', formData)
+  const handleSave = async (data: OrderFormData | OrderUpdateData) => {
+    if (editOrder) await api.put(`/orders/${editOrder.id}`, data)
+    else           await api.post('/orders', data)
     await fetchOrders()
   }
+
+  const openCreate = () => { setEditOrder(null); setModalOpen(true) }
+  const openEdit   = (o: Order) => { setEditOrder(o); setModalOpen(true) }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -53,7 +58,7 @@ export default function OrdersPage() {
             <h2 className="text-2xl font-bold text-gray-900">Órdenes</h2>
             <p className="text-gray-400 text-sm mt-0.5">{filtered.length} de {orders.length} orden(es)</p>
           </div>
-          <button onClick={() => setModalOpen(true)}
+          <button onClick={openCreate}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -95,9 +100,15 @@ export default function OrdersPage() {
                     ))}
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${STATUS_STYLES[order.status]}`}>
-                  {STATUS_LABELS[order.status]}
-                </span>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLES[order.status]}`}>
+                    {STATUS_LABELS[order.status]}
+                  </span>
+                  <button onClick={() => openEdit(order)}
+                    className="text-emerald-600 hover:text-emerald-800 font-medium text-xs transition">
+                    Editar
+                  </button>
+                </div>
               </div>
             ))}
             {filtered.length === 0 && (
@@ -108,7 +119,13 @@ export default function OrdersPage() {
           </div>
         )}
       </main>
-      {modalOpen && <OrderModal onSave={handleSave} onClose={() => setModalOpen(false)} />}
+      {modalOpen && (
+        <OrderModal
+          order={editOrder}
+          onSave={handleSave}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </div>
   )
 }
