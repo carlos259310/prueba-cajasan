@@ -1,18 +1,24 @@
-import { useState } from 'react'
+import { useState, ChangeEvent, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
   const { login }   = useAuth()
   const navigate    = useNavigate()
-  const [form, setForm]     = useState({ username: '', password: '' })
-  const [error, setError]   = useState('')
+  const [form, setForm]       = useState({ username: '', password: '' })
+  const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError(''); setLoading(true)
     try { await login(form.username, form.password); navigate('/orders') }
-    catch (err) { setError(err.response?.data?.detail || 'Usuario o contraseña incorrectos') }
+    catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+      setError(detail ?? 'Usuario o contraseña incorrectos')
+    }
     finally { setLoading(false) }
   }
 
@@ -35,27 +41,19 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {['username', 'password'].map((field) => (
+          {(['username', 'password'] as const).map((field) => (
             <div key={field}>
-              <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 {field === 'username' ? 'Usuario' : 'Contraseña'}
               </label>
-              <input
-                name={field}
-                type={field === 'password' ? 'password' : 'text'}
-                value={form[field]}
-                onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                required
+              <input name={field} type={field === 'password' ? 'password' : 'text'}
+                value={form[field]} onChange={handleChange} required
                 placeholder={field === 'username' ? 'admin o user' : '••••••••'}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
-              />
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent" />
             </div>
           ))}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl text-sm transition mt-2"
-          >
+          <button type="submit" disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl text-sm transition mt-2">
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>

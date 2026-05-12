@@ -2,6 +2,7 @@ import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
+
   return (
     <nav className="bg-emerald-700 text-white px-6 py-4 flex items-center justify-between shadow-md">
       <div className="flex items-center gap-2">

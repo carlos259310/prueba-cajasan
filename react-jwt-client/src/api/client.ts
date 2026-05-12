@@ -1,36 +1,28 @@
-import axios from 'axios'
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 const BASE_URL = 'http://127.0.0.1:8000'
 
 const api = axios.create({ baseURL: BASE_URL })
 
-// Adjunta el access token a cada petición
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Si recibe 401, intenta refrescar el token automáticamente
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const original = error.config
-
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true
-
+  async (error: AxiosError) => {
+    const original = error.config!
+    if (error.response?.status === 401 && !(original as { _retry?: boolean })._retry) {
+      (original as { _retry?: boolean })._retry = true
       const refreshToken = localStorage.getItem('refresh_token')
-      if (!refreshToken) {
-        localStorage.clear()
-        window.location.href = '/login'
-        return Promise.reject(error)
-      }
-
+      if (!refreshToken) { localStorage.clear(); window.location.href = '/login'; return Promise.reject(error) }
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-          refresh_token: refreshToken,
-        })
+        const { data } = await axios.post<{ access_token: string }>(
+          `${BASE_URL}/auth/refresh`,
+          { refresh_token: refreshToken }
+        )
         localStorage.setItem('access_token', data.access_token)
         original.headers.Authorization = `Bearer ${data.access_token}`
         return api(original)
@@ -40,7 +32,6 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
     }
-
     return Promise.reject(error)
   }
 )

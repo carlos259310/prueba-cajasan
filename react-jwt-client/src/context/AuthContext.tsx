@@ -1,21 +1,23 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import axios from 'axios'
+import type { AuthContextType, User } from '../types'
 
-const AuthContext = createContext(null)
+const AuthContext = createContext<AuthContextType | null>(null)
 const AUTH_URL = 'http://127.0.0.1:8000'
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(() => {
     const username = localStorage.getItem('username')
     const token    = localStorage.getItem('access_token')
     return token && username ? { username } : null
   })
 
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (username: string, password: string) => {
     const body = new URLSearchParams({ username, password })
-    const { data } = await axios.post(`${AUTH_URL}/auth/login`, body, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    })
+    const { data } = await axios.post<{ access_token: string; refresh_token: string }>(
+      `${AUTH_URL}/auth/login`, body,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    )
     localStorage.setItem('access_token',  data.access_token)
     localStorage.setItem('refresh_token', data.refresh_token)
     localStorage.setItem('username',      username)
@@ -35,4 +37,8 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() { return useContext(AuthContext) }
+export function useAuth(): AuthContextType {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth debe estar dentro de AuthProvider')
+  return ctx
+}

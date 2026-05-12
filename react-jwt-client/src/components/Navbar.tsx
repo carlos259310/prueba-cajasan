@@ -14,8 +14,7 @@ export default function Navbar() {
       </div>
       <div className="flex items-center gap-4">
         <span className="text-indigo-200 text-sm">
-          Hola,{' '}
-          <span className="font-semibold text-white capitalize">{user?.username}</span>
+          Hola, <span className="font-semibold text-white capitalize">{user?.username}</span>
         </span>
         <button
           onClick={logout}
