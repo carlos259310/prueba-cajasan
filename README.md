@@ -202,18 +202,19 @@ Al hacer logout, el access_token se añade a una lista negra en memoria. Aunque 
 | POST   | /auth/login    | No             | Login, devuelve los tokens |
 | POST   | /auth/refresh  | No             | Renueva el access_token   |
 | POST   | /auth/logout   | Sí             | Invalida el access_token  |
-| GET    | /products      | Sí             | Lista todos los productos |
-| GET    | /products/{id} | Sí             | Un producto por ID        |
-| POST   | /products      | Sí             | Crea un producto nuevo    |
-| PUT    | /products/{id} | Sí             | Actualiza un producto     |
+| GET    | /products      | Sí             | Lista todos los productos  |
+| GET    | /products/{id} | Sí             | Un producto por ID         |
+| POST   | /products      | Sí             | Crea un producto nuevo     |
+| PATCH  | /products/{id} | Sí             | Actualiza un producto      |
 
 ### fastapi-orders — http://127.0.0.1:8001
 
-| Método | Ruta          | Requiere token | Descripción             |
-|--------|---------------|----------------|-------------------------|
-| GET    | /orders       | Sí             | Lista todas las órdenes |
-| GET    | /orders/{id}  | Sí             | Una orden por ID        |
-| POST   | /orders       | Sí             | Crea una orden nueva    |
+| Método | Ruta                    | Requiere token | Descripción                  |
+|--------|-------------------------|----------------|------------------------------|
+| GET    | /orders                 | Sí             | Lista todas las órdenes      |
+| GET    | /orders/{id}            | Sí             | Una orden por ID             |
+| POST   | /orders                 | Sí             | Crea una orden nueva         |
+| PATCH  | /orders/{id}/status     | Sí             | Actualiza el estado de una orden |
 
 ---
 

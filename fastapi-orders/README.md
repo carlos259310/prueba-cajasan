@@ -58,7 +58,7 @@ Cuando aparezca `Uvicorn running on http://127.0.0.1:8001`, el servidor está li
   "id": 1,
   "customerName": "Juan Pérez",
   "items": ["Camiseta", "Zapatos"],
-  "status": "pending"
+  "status": "PENDING"
 }
 ```
 
@@ -67,7 +67,7 @@ Cuando aparezca `Uvicorn running on http://127.0.0.1:8001`, el servidor está li
 | `id`           | Número entero asignado automáticamente al crear                                          |
 | `customerName` | Nombre del cliente (mínimo 1 carácter)                                                   |
 | `items`        | Lista de artículos (mínimo 1 elemento)                                                   |
-| `status`       | Estado de la orden. Valores posibles: `pending`, `processing`, `completed`, `cancelled`. Siempre empieza en `pending` |
+| `status`       | Estado de la orden. Valores posibles: `PENDING`, `CONFIRMED`, `SHIPPED`, `DELIVERED`. Siempre empieza en `PENDING` |
 
 ---
 
@@ -123,7 +123,25 @@ Respuesta esperada (`201 Created`):
   "id": 4,
   "customerName": "Ana García",
   "items": ["Bolso", "Cinturón", "Gorra"],
-  "status": "pending"
+  "status": "PENDING"
+}
+```
+
+**Actualizar el estado de una orden:**
+```bash
+curl -s -X PATCH http://127.0.0.1:8001/orders/1/status \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "CONFIRMED"}'
+```
+
+Respuesta esperada (`200 OK`):
+```json
+{
+  "id": 1,
+  "customerName": "Juan Pérez",
+  "items": ["Camiseta", "Zapatos"],
+  "status": "CONFIRMED"
 }
 ```
 
@@ -142,11 +160,12 @@ Respuesta esperada (`404 Not Found`):
 
 ## Endpoints
 
-| Método | Ruta          | Token | Descripción                             |
-|--------|---------------|-------|-----------------------------------------|
-| GET    | /orders       | Sí    | Devuelve todas las órdenes              |
-| GET    | /orders/{id}  | Sí    | Devuelve una orden específica por su ID |
-| POST   | /orders       | Sí    | Crea una orden nueva (status = pending) |
+| Método | Ruta                  | Token | Descripción                                      |
+|--------|-----------------------|-------|--------------------------------------------------|
+| GET    | /orders               | Sí    | Devuelve todas las órdenes                       |
+| GET    | /orders/{id}          | Sí    | Devuelve una orden específica por su ID          |
+| POST   | /orders               | Sí    | Crea una orden nueva (status = PENDING)          |
+| PATCH  | /orders/{id}/status   | Sí    | Actualiza el estado (PENDING/CONFIRMED/SHIPPED/DELIVERED) |
 
 ---
 
@@ -156,9 +175,9 @@ El servidor arranca con 3 órdenes de ejemplo:
 
 | ID | Cliente        | Artículos                           | Estado      |
 |----|----------------|-------------------------------------|-------------|
-| 1  | Juan Pérez     | Camiseta, Zapatos                   | pending     |
-| 2  | María García   | Laptop Pro 15                       | processing  |
-| 3  | Carlos López   | Mouse Inalámbrico, Teclado Mecánico | completed   |
+| 1  | Juan Pérez     | Camiseta, Zapatos                   | PENDING     |
+| 2  | María García   | Laptop Pro 15                       | CONFIRMED   |
+| 3  | Carlos López   | Mouse Inalámbrico, Teclado Mecánico | SHIPPED     |
 
 ---
 
@@ -175,7 +194,7 @@ fastapi-orders/
 │   ├── routers/
 │   │   └── orders.py         ← Los 3 endpoints de órdenes + datos en memoria
 │   └── schemas/
-│       └── order.py          ← OrderCreate (lo que envías) y Order (lo que recibes)
+│       └── order.py          ← OrderCreate, OrderStatusUpdate y Order (lo que recibes)
 └── requirements.txt
 ```
 
