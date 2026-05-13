@@ -2,10 +2,10 @@ import { useState, useEffect, FormEvent } from 'react'
 import type { Order, OrderFormData, OrderStatus, OrderUpdateData } from '../types'
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
-  { value: 'pending',    label: 'Pendiente'   },
-  { value: 'processing', label: 'En proceso'  },
-  { value: 'completed',  label: 'Completada'  },
-  { value: 'cancelled',  label: 'Cancelada'   },
+  { value: 'PENDING',   label: 'Pendiente'   },
+  { value: 'CONFIRMED', label: 'Confirmada'  },
+  { value: 'SHIPPED',   label: 'Enviada'     },
+  { value: 'DELIVERED', label: 'Entregada'   },
 ]
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
 export default function OrderModal({ order, onSave, onClose }: Props) {
   const [customerName, setCustomerName] = useState('')
   const [itemsText, setItemsText]       = useState('')
-  const [orderStatus, setOrderStatus]   = useState<OrderStatus>('pending')
+  const [orderStatus, setOrderStatus]   = useState<OrderStatus>('PENDING')
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
 
@@ -29,7 +29,7 @@ export default function OrderModal({ order, onSave, onClose }: Props) {
     } else {
       setCustomerName('')
       setItemsText('')
-      setOrderStatus('pending')
+      setOrderStatus('PENDING')
     }
   }, [order])
 
@@ -92,7 +92,7 @@ export default function OrderModal({ order, onSave, onClose }: Props) {
           )}
           {!order && (
             <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-              El estado se establece automáticamente como <span className="font-semibold text-yellow-600">pending</span>.
+              El estado se establece automáticamente como <span className="font-semibold text-yellow-600">PENDING</span>.
             </p>
           )}
           <div className="flex justify-end gap-3 pt-1">

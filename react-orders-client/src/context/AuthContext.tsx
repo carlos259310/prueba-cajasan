@@ -7,8 +7,8 @@ const AUTH_URL = 'http://127.0.0.1:8000'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const username = localStorage.getItem('username')
-    const token    = localStorage.getItem('access_token')
+    const username = sessionStorage.getItem('username')
+    const token    = sessionStorage.getItem('access_token')
     return token && username ? { username } : null
   })
 
@@ -18,18 +18,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       `${AUTH_URL}/auth/login`, body,
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     )
-    localStorage.setItem('access_token',  data.access_token)
-    localStorage.setItem('refresh_token', data.refresh_token)
-    localStorage.setItem('username',      username)
+    sessionStorage.setItem('access_token',  data.access_token)
+    sessionStorage.setItem('refresh_token', data.refresh_token)
+    sessionStorage.setItem('username',      username)
     setUser({ username })
   }, [])
 
   const logout = useCallback(async () => {
-    const token = localStorage.getItem('access_token')
+    const token = sessionStorage.getItem('access_token')
     try {
       if (token) await axios.post(`${AUTH_URL}/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } })
     } catch { /* continúa aunque falle */ } finally {
-      localStorage.clear()
+      sessionStorage.clear()
       setUser(null)
     }
   }, [])

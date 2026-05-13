@@ -5,13 +5,13 @@ import OrderModal from '../components/OrderModal'
 import type { Order, OrderFormData, OrderStatus, OrderUpdateData } from '../types'
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
-  pending:    'bg-yellow-100 text-yellow-700 border-yellow-200',
-  processing: 'bg-blue-100   text-blue-700   border-blue-200',
-  completed:  'bg-green-100  text-green-700  border-green-200',
-  cancelled:  'bg-red-100    text-red-700    border-red-200',
+  PENDING:   'bg-yellow-100 text-yellow-700 border-yellow-200',
+  CONFIRMED: 'bg-blue-100   text-blue-700   border-blue-200',
+  SHIPPED:   'bg-purple-100 text-purple-700 border-purple-200',
+  DELIVERED: 'bg-green-100  text-green-700  border-green-200',
 }
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Pendiente', processing: 'En proceso', completed: 'Completada', cancelled: 'Cancelada',
+  PENDING: 'Pendiente', CONFIRMED: 'Confirmada', SHIPPED: 'Enviada', DELIVERED: 'Entregada',
 }
 
 export default function OrdersPage() {
@@ -41,7 +41,7 @@ export default function OrdersPage() {
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
   const handleSave = async (data: OrderFormData | OrderUpdateData) => {
-    if (editOrder) await api.put(`/orders/${editOrder.id}`, data)
+    if (editOrder) await api.patch(`/orders/${editOrder.id}/status`, { status: (data as OrderUpdateData).status })
     else           await api.post('/orders', data)
     await fetchOrders()
   }

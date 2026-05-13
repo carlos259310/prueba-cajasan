@@ -1,7 +1,7 @@
 from typing import Literal
 from pydantic import BaseModel, Field
 
-OrderStatus = Literal["pending", "processing", "completed", "cancelled"]
+OrderStatus = Literal["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED"]
 
 
 class OrderCreate(BaseModel):
@@ -9,14 +9,12 @@ class OrderCreate(BaseModel):
     items: list[str] = Field(..., min_length=1, examples=[["Camiseta", "Zapatos"]])
 
 
-class OrderUpdate(BaseModel):
-    customerName: str = Field(..., min_length=1)
-    items: list[str] = Field(..., min_length=1)
-    status: OrderStatus = "pending"
+class OrderStatusUpdate(BaseModel):
+    status: OrderStatus
 
 
 class Order(OrderCreate):
     id: int
-    status: OrderStatus = "pending"
+    status: OrderStatus = "PENDING"
 
     model_config = {"from_attributes": True}

@@ -32,7 +32,7 @@ export default function ProductsPage() {
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
   const handleSave = async (formData: ProductFormData) => {
-    if (editProduct) await api.put(`/products/${editProduct.id}`, formData)
+    if (editProduct) await api.patch(`/products/${editProduct.id}`, formData)
     else             await api.post('/products', formData)
     await fetchProducts()
   }

@@ -67,11 +67,11 @@ async def create_product(
     return new_product
 
 
-@router.put(
+@router.patch(
     "/{product_id}",
     response_model=Product,
-    summary="Actualizar producto (completo)",
-    description="Reemplaza todos los campos de un producto existente.",
+    summary="Actualizar producto",
+    description="Actualiza los campos de un producto existente.",
 )
 async def update_product(
     product_id: int,
