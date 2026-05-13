@@ -102,7 +102,7 @@ Con el token activo, prueba estos endpoints:
   ```json
   { "name": "Monitor 4K", "category": "Electrónica", "price": 499.99, "stock": 8 }
   ```
-- `PUT /products/1` → reemplaza todos los campos del producto 1
+- `PATCH /products/1` → actualiza los campos del producto 1
 
 ### 4. Probar el logout
 
@@ -134,7 +134,7 @@ Recibirás un access_token nuevo sin hacer login de nuevo.
 | GET    | /products      | Sí    | Lista todos los productos            |
 | GET    | /products/{id} | Sí    | Devuelve un producto por su ID       |
 | POST   | /products      | Sí    | Crea un producto nuevo               |
-| PUT    | /products/{id} | Sí    | Actualiza todos los campos           |
+| PATCH  | /products/{id} | Sí    | Actualiza los campos de un producto  |
 
 ---
 

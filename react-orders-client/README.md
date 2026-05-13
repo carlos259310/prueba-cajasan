@@ -31,7 +31,8 @@ Abre http://localhost:5174 en el navegador.
 - **Login**: ingresa con `admin` / `admin123` o `user` / `user123`
 - **Ver órdenes**: lista de todas las órdenes con su cliente, artículos y estado
 - **Crear orden**: botón "Nueva Orden" → completa nombre del cliente y artículos (separados por coma)
-- **Ver el estado**: cada orden muestra su estado con un color distinto
+- **Ver el estado**: cada orden muestra su estado con un color distinto (PENDING, CONFIRMED, SHIPPED, DELIVERED)
+- **Cambiar estado**: botón "Editar" en cada orden → selector de estado → Actualizar
 - **Logout**: botón en la barra superior
 
 ---
@@ -49,27 +50,27 @@ Son los mismos que en react-jwt-client. El login siempre va al puerto 8000 de fa
 
 ## Estados de una orden
 
-| Estado       | Color    | Significado                        |
-|--------------|----------|------------------------------------|
-| `pending`    | Amarillo | Recién creada, sin procesar        |
-| `processing` | Azul     | En preparación o envío             |
-| `completed`  | Verde    | Entregada y finalizada             |
-| `cancelled`  | Rojo     | Cancelada                          |
+| Estado       | Color   | Significado                        |
+|--------------|---------|------------------------------------|
+| `PENDING`    | Amarillo | Recién creada, sin procesar       |
+| `CONFIRMED`  | Azul     | Confirmada y en preparación       |
+| `SHIPPED`    | Morado   | Enviada, en camino al cliente     |
+| `DELIVERED`  | Verde    | Entregada y finalizada            |
 
-Las nuevas órdenes siempre se crean en estado `pending`. Los demás estados están en los datos de ejemplo precargados.
+Las nuevas órdenes siempre se crean en estado `PENDING`. El estado se puede cambiar desde el botón Editar de cada orden.
 
 ---
 
 ## Cómo funciona por dentro
 
 **Autenticación**
-El login llama a `POST /auth/login` en fastapi-jwt (puerto 8000), no en fastapi-orders. El token recibido se guarda en `localStorage` y se usa para todas las peticiones a fastapi-orders.
+El login llama a `POST /auth/login` en fastapi-jwt (puerto 8000), no en fastapi-orders. El token recibido se guarda en `sessionStorage` (nunca en `localStorage`) y se usa para todas las peticiones a fastapi-orders.
 
 **Renovación automática del token**
 Si el access_token expira (dura 3 minutos), el interceptor de Axios lo detecta, lo renueva con el refresh_token y reintenta la petición automáticamente.
 
 **Rutas protegidas**
-Sin token válido en localStorage, la app redirige al login. Al hacer logout, también se redirige.
+Sin token válido en sessionStorage, la app redirige al login. Al hacer logout, también se redirige.
 
 ---
 
@@ -82,7 +83,7 @@ react-orders-client/
 │   │   └── client.ts         ← Axios apuntando a fastapi-orders, con interceptores
 │   ├── components/
 │   │   ├── Navbar.tsx         ← Barra superior con nombre de usuario y logout
-│   │   ├── OrderModal.tsx     ← Modal para crear una nueva orden
+│   │   ├── OrderModal.tsx     ← Modal para crear orden o cambiar su estado
 │   │   └── PrivateRoute.tsx   ← Redirige al login si no hay sesión activa
 │   ├── context/
 │   │   └── AuthContext.tsx    ← Estado global de autenticación

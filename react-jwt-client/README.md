@@ -47,13 +47,13 @@ Abre http://localhost:5173 en el navegador.
 ## Cómo funciona por dentro
 
 **Autenticación**
-El login envía `username` y `password` al endpoint `POST /auth/login` de fastapi-jwt. Si es correcto, el backend devuelve un `access_token` (dura 3 minutos) y un `refresh_token` (dura 1 día). Ambos se guardan en `localStorage`.
+El login envía `username` y `password` al endpoint `POST /auth/login` de fastapi-jwt. Si es correcto, el backend devuelve un `access_token` (dura 3 minutos) y un `refresh_token` (dura 1 día). Ambos se guardan en `sessionStorage` (se borran al cerrar el navegador, nunca en `localStorage`).
 
 **Renovación automática del token**
 Cuando el access_token expira, el interceptor de Axios lo detecta (respuesta 401), pide un token nuevo usando el refresh_token y reintenta la petición original. El usuario no nota nada, todo sucede en segundo plano.
 
 **Rutas protegidas**
-Si no hay token en localStorage al entrar, la app redirige automáticamente al login. Al hacer logout, también se redirige al login.
+Si no hay token en sessionStorage al entrar, la app redirige automáticamente al login. Al hacer logout, también se redirige al login.
 
 ---
 
